@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNC High-Speed Spindle Warm-up Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .pulse-glow-green {
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 sm:p-12">
+
+    <audio id="warm-audio" src="warm.mp3" preload="auto"></audio>
+
+    <div class="max-w-6xl w-full space-y-10">
+        
+        <header class="text-center space-y-4">
+            <div class="inline-block bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold tracking-wider mb-2">
+                PIYAWAT STANDARD
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">
+                ทำไมต้อง <span class="text-blue-400">วอร์มเครื่อง CNC ?</span>
+            </h1>
+            <p class="text-xl text-slate-300 max-w-2xl mx-auto">
+                เพราะการรอคอยเพียง 15 นาที คือ <strong class="text-white">"การลงทุน"</strong> เพื่อความแม่นยำและปกป้อง Spindle ของคุณ
+            </p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1 space-y-6">
+                <div class="glass-panel rounded-2xl p-8 flex flex-col items-center text-center shadow-2xl relative overflow-hidden h-full">
+                    <h2 class="text-xl font-bold text-white mb-8 border-b border-slate-700 w-full pb-4">แผงควบคุมหลัก</h2>
+                    
+                    <button id="btn-start-warm" onclick="handleProbeAction(event, 'startwarm')" 
+                        class="pulse-glow-green w-full py-10 px-6 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl transition-all transform hover:scale-105 flex flex-col items-center justify-center gap-4 mb-8 group">
+                        <i class="fas fa-fire-alt text-5xl group-hover:rotate-12 transition-transform"></i>
+                        <div class="text-center">
+                            <span class="block text-2xl font-bold uppercase tracking-widest">Start Warmup</span>
+                            <span class="text-sm opacity-80 font-light text-yellow-300 underline">กด Ctrl + คลิกเพื่อเริ่ม</span>
+                        </div>
+                    </button>
+
+                    <div class="w-full space-y-3">
+                        <button id="btn-audio" onclick="toggleAudio()" class="w-full flex items-center justify-center gap-3 bg-slate-800 hover:bg-slate-700 text-white py-4 px-6 rounded-xl transition-all border border-slate-600 group">
+                            <i class="fas fa-play text-blue-400 text-xl group-hover:scale-110 transition-transform" id="audio-icon"></i>
+                            <span id="audio-text" class="text-lg">ฟังคำอธิบายเสียง</span>
+                        </button>
+                        <div id="audio-progress-container" class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                            <div id="audio-progress-bar" class="bg-blue-400 h-full w-0 transition-all duration-100"></div>
+                        </div>
+                        <div id="audio-timer" class="font-mono text-sm text-slate-500 text-right">00:00 / 00:00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 grid grid-cols-1 gap-4 h-full">
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-orange-500 hover:bg-slate-800/50 transition-colors">
+                    <div class="flex gap-5">
+                        <div class="bg-orange-500/20 p-4 rounded-xl text-orange-400 shrink-0">
+                            <i class="fas fa-temperature-high text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl text-white">1. Thermal Stability</h3>
+                            <p class="text-slate-400 mt-2 leading-relaxed">โลหะขยายตัวเมื่อเกิดความร้อน การวอร์มเครื่องจะพาเครื่องเข้าสู่ "Steady State" เพื่อพิกัดความเพี้ยนที่คงที่ (Piyawat Standard 0.02mm) หากตั้งศูนย์ตอนเครื่องเย็น ชิ้นงานจะเสียทันที</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-blue-500 hover:bg-slate-800/50 transition-colors">
+                    <div class="flex gap-5">
+                        <div class="bg-blue-500/20 p-4 rounded-xl text-blue-400 shrink-0">
+                            <i class="fas fa-tint text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl text-white">2. Lubrication Flow</h3>
+                            <p class="text-slate-400 mt-2 leading-relaxed">จาระบีและน้ำมันจะตกลงด้านล่างเมื่อเครื่องหยุดนิ่ง การสตาร์ทรอบสูงทันทีคือ "การสตาร์ทแห้ง" (Dry Start) ที่ทำให้ตลับลูกปืนเกิดรอยขีดข่วน ต้องค่อยๆ กระจายน้ำมันทีละสเต็ป</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-emerald-500 hover:bg-slate-800/50 transition-colors">
+                    <div class="flex gap-5">
+                        <div class="bg-emerald-500/20 p-4 rounded-xl text-emerald-400 shrink-0">
+                            <i class="fas fa-shield-alt text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl text-white">3. Spindle Longevity</h3>
+                            <p class="text-slate-400 mt-2 leading-relaxed">ปกป้องหัว Spindle ราคาสูง (18,000 - 36,000 RPM) การรักษาระบบลูกปืนไฮบริดเซรามิกให้ขยายตัวสมดุลกับเบ้าเหล็กกล้า ช่วยยืดอายุการใช้งานได้มหาศาล</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="glass-panel rounded-xl p-4 text-center text-slate-500 text-xs tracking-widest">
+            POWER BY MAKER CUSTOMS| PIYAWAT STANDARD
+        </footer>
+    </div>
+
+    <script>
+        // --- 1. Audio Logic (ดึงมาจากไฟล์เดิมทั้งหมด) ---
+        const audio = document.getElementById('warm-audio');
+        const audioIcon = document.getElementById('audio-icon');
+        const audioText = document.getElementById('audio-text');
+        const audioTimer = document.getElementById('audio-timer');
+        const audioBar = document.getElementById('audio-progress-bar');
+
+        function toggleAudio() {
+            if (audio.paused) {
+                audio.play();
+                audioIcon.className = "fas fa-pause text-red-400 text-xl";
+                audioText.innerText = "กำลังเล่นเสียง...";
+            } else {
+                audio.pause();
+                audioIcon.className = "fas fa-play text-blue-400 text-xl";
+                audioText.innerText = "ฟังคำอธิบายเสียงต่อ";
+            }
+        }
+
+        audio.addEventListener('timeupdate', () => {
+            if (!isNaN(audio.duration)) {
+                const progressPercent = (audio.currentTime / audio.duration) * 100;
+                audioBar.style.width = progressPercent + "%";
+                audioTimer.innerText = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+            }
+        });
+
+        audio.onended = () => {
+            audioIcon.className = "fas fa-play text-blue-400 text-xl";
+            audioText.innerText = "ฟังคำอธิบายเสียงอีกครั้ง";
+        };
+
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        // --- 2. CNC Command Logic (โครงสร้างที่คุณต้องการ) ---
+        function handleProbeAction(event, cmd) {
+            if (event.ctrlKey) {
+                // ส่งคำสั่งไปยัง AHK 
+                sendAHK(cmd);
+                
+                // เอฟเฟกต์ตอบสนองเมื่อส่งคำสั่งสำเร็จ
+                visualFeedback(cmd);
+            } else {
+                // หากไม่ได้กด Ctrl ค้างไว้
+                alert("กรุณากดแป้น 'Ctrl' ค้างไว้ แล้วคลิกเพื่อส่งคำสั่งไปยังเครื่อง");
+            }
+        }
+
+        function sendAHK(cmd) {
+            if(window.ahk) {
+                window.ahk.global.CNC_Execute(cmd);
+            } else {
+                console.log("AHK Command Sent:", cmd);
+                alert("Shortcut Active: ส่งคำสั่ง " + cmd);
+            }
+        }
+
+        function visualFeedback(cmd) {
+            const btn = document.getElementById('btn-start-warm');
+            const originalContent = btn.innerHTML;
+            
+            btn.classList.remove('bg-emerald-600', 'pulse-glow-green');
+            btn.classList.add('bg-blue-600');
+            btn.innerHTML = `
+                <i class="fas fa-sync fa-spin text-5xl"></i>
+                <div class="text-center">
+                    <span class="block text-2xl font-bold uppercase tracking-widest">SENDING...</span>
+                    <span class="text-sm opacity-80 font-light">Command: ${cmd}</span>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                btn.classList.add('bg-emerald-600', 'pulse-glow-green');
+                btn.classList.remove('bg-blue-600');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

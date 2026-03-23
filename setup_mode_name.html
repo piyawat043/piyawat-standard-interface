@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสอบเทียบกึ่งอัตโนมัติ - PIYAWAT STANDARD</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-gold: #ffd700;
+            --bg-dark: #050505;
+        }
+
+body {
+    margin: 0; 
+    padding: 0; 
+    width: 100vw; 
+    height: 100vh;
+    background-color: #050505; /* สีดำสนิท มืดสนิท เรียบง่ายสุดๆ */
+    color: white; 
+    font-family: 'Prompt', sans-serif; 
+    overflow: hidden;
+    transition: background-color 0.3s;
+}
+
+/* ลบโค้ด CSS ของ #bg-video อันเก่าทิ้งไปได้เลยครับ */
+
+        .header-title {
+            position: absolute; top: 30px; left: 40px;
+            font-family: 'Rajdhani'; font-size: 28px; font-weight: 700;
+            letter-spacing: 2px; color: var(--neon-blue);
+            text-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
+            transition: 0.3s;
+        }
+
+        /* --- เอฟเฟกต์เมื่อกด CTRL ค้างไว้ --- */
+        body.ctrl-active {
+            background-color: #0a0900; 
+        }
+        body.ctrl-active .header-title {
+            color: var(--neon-gold);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+
+        /* --- ปรับโครงสร้าง Layout ใหม่ --- */
+        .main-container {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 100vh; padding: 80px 50px 60px 50px; box-sizing: border-box; gap: 30px;
+        }
+
+        .top-row { display: flex; width: 100%; height: 50%; gap: 25px; align-items: stretch; }
+        .bottom-row { display: flex; width: 100%; height: 25%; justify-content: center; align-items: stretch; }
+
+        /* --- ปุ่มโหมด --- */
+        .btn-cal {
+            background: rgba(255,255,255,0.03); border: 1px solid #333;
+            border-radius: 20px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+
+        .btn-cal:hover {
+            border-color: var(--neon-blue); transform: scale(1.02);
+            background: rgba(0, 243, 255, 0.05); box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+        }
+
+        body.ctrl-active .btn-cal {
+            border-color: var(--neon-gold);
+            background: rgba(255, 215, 0, 0.02);
+        }
+        body.ctrl-active .btn-cal:hover {
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+            transform: scale(1.05);
+        }
+        body.ctrl-active .btn-cal img {
+            filter: drop-shadow(0 0 15px var(--neon-gold)) brightness(1.2);
+        }
+
+        .btn-main { width: 50%; }
+        .btn-sub { width: 25%; }
+
+        /* --- ดีไซน์ปุ่มสี (First Setup) แบบพอดีๆ ไม่แย่งซีน --- */
+        .btn-first-setup {
+            width: 50%; /* ลดความกว้างลงให้พอดีๆ */
+            border: 1px dashed #444; /* ใช้เส้นปะให้ดูเป็นปุ่มตั้งค่าระบบ */
+            background: rgba(255, 255, 255, 0.01);
+        }
+        .btn-first-setup .setup-icon {
+            font-size: 35px; margin-bottom: 8px; color: #666; transition: 0.3s;
+        }
+        .btn-first-setup .btn-label {
+            font-size: 20px; color: #aaa; text-shadow: none;
+        }
+        .btn-first-setup .sub-text {
+            font-size: 14px; color: #666; margin-top: 5px; font-weight: 300; transition: 0.3s;
+        }
+
+        /* เมื่อเอาเมาส์ชี้ หรือ กด Ctrl ค่อยเปล่งแสงสีทอง */
+        .btn-first-setup:hover, body.ctrl-active .btn-first-setup {
+            border-style: solid;
+            border-color: var(--neon-gold);
+            background: rgba(255, 215, 0, 0.05);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+        }
+        body.ctrl-active .btn-first-setup {
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            background: rgba(255, 215, 0, 0.1);
+        }
+        .btn-first-setup:hover .setup-icon, body.ctrl-active .btn-first-setup .setup-icon {
+            color: var(--neon-gold);
+            filter: drop-shadow(0 0 8px rgba(255,215,0,0.5));
+        }
+        .btn-first-setup:hover .btn-label, body.ctrl-active .btn-first-setup .btn-label {
+            color: var(--neon-gold);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        .btn-first-setup:hover .sub-text, body.ctrl-active .btn-first-setup .sub-text {
+            color: #aaa;
+        }
+
+        .btn-cal img {
+            width: 75%; height: 75%; object-fit: contain;
+            transition: 0.4s; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+
+        /* ปุ่ม Dashboard (มุมซ้ายล่าง) */
+        .btn-home-back {
+            position: absolute; bottom: 30px; left: 30px;
+            display: flex; align-items: center; gap: 10px;
+            color: #666; font-family: 'Rajdhani'; font-weight: bold; font-size: 20px;
+            cursor: pointer; transition: 0.3s; z-index: 100;
+            padding: 10px 20px; border: 1px solid transparent; border-radius: 10px;
+        }
+
+        /* Modal Settings */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: none; z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            width: 85%; height: 85%; background: #111; border: 2px solid var(--neon-blue);
+            border-radius: 20px; position: relative; display: flex; flex-direction: column;
+        }
+        .video-box { flex: 1; background: #000; border-radius: 18px 18px 0 0; overflow: hidden; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        .modal-controls {
+            height: 80px; display: flex; justify-content: center; align-items: center; 
+            padding: 0 40px; background: rgba(0,0,0,0.5);
+        }
+        .step-nav { display: flex; gap: 15px; align-items: center; }
+        .btn-step {
+            background: #333; color: white; border: 1px solid #555;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: 'Rajdhani';
+        }
+        .close-modal {
+            position: absolute; top: -15px; right: -15px; width: 45px; height: 45px;
+            background: #ff4444; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; cursor: pointer; border: 2px solid white;
+        }
+		
+        /* --- ระบบหน้าต่างทดสอบหัววัด (Probe Test) --- */
+        .probe-modal-content {
+            width: 85%; height: 85%; background: #0d0d0d; border: 2px solid var(--neon-blue);
+            border-radius: 20px; position: relative; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 40px; box-sizing: border-box; gap: 40px;
+        }
+        body.ctrl-active .probe-modal-content { border-color: var(--neon-gold); }
+
+        .probe-btn-main {
+            width: 300px; height: 300px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; text-align: center;
+            border-width: 3px;
+        }
+        .probe-btn-main .btn-label { font-size: 36px; margin-top: 0; }
+
+        .probe-bottom-row {
+            display: flex; gap: 20px; width: 100%; justify-content: center;
+        }
+        .probe-btn-sub {
+            width: 220px; height: 100px;
+        }
+
+        /* ปุ่มมุมขวาล่างสำหรับเปิดหน้าระบบทดสอบหัววัด */
+        .btn-open-probe {
+            position: absolute; bottom: 30px; right: 30px;
+            display: flex; align-items: center; gap: 10px;
+            color: var(--neon-blue); font-family: 'Rajdhani'; font-weight: bold; font-size: 20px;
+            cursor: pointer; transition: 0.3s; z-index: 100;
+            padding: 10px 20px; border: 1px solid var(--neon-blue); border-radius: 10px;
+            background: rgba(0, 243, 255, 0.05); text-transform: uppercase;
+        }
+        .btn-open-probe:hover {
+            background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+        }
+        body.ctrl-active .btn-open-probe {
+            color: var(--neon-gold); border-color: var(--neon-gold); background: rgba(255, 215, 0, 0.05);
+        }
+        body.ctrl-active .btn-open-probe:hover {
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); background: rgba(255, 215, 0, 0.2);
+        }
+
+        /* --- ปุ่มแก้ไขและ Label --- */
+        .admin-panel {
+            position: absolute; top: 30px; right: 40px; z-index: 100;
+        }
+        .edit-mode-btn {
+            background: transparent; border: 1px solid #444; color: #666;
+            padding: 8px 15px; border-radius: 10px; cursor: pointer; font-family: 'Rajdhani';
+        }
+        .edit-mode-btn:hover { border-color: var(--neon-gold); color: var(--neon-gold); }
+        
+        .btn-label {
+            margin-top: 15px; font-family: 'Rajdhani'; font-size: 24px; font-weight: 700;
+            color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px; transition: all 0.3s ease;
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.8), 0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+        body.ctrl-active .btn-label {
+            color: var(--neon-gold);
+            text-shadow: 0 0 7px rgba(255, 215, 0, 0.9), 0 0 15px rgba(255, 215, 0, 0.6), 0 0 25px rgba(255, 215, 0, 0.4);
+        }
+        .btn-cal:hover .btn-label {
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 1), 0 0 20px rgba(0, 243, 255, 0.8), 0 0 30px rgba(0, 243, 255, 0.6);
+            transform: scale(1.1);
+        }
+
+        /* --- แอนิเมชันปุ่มสไลด์เฟดเข้ามาทีละตัว --- */
+        @keyframes fadeSlideRight {
+            from { opacity: 0; transform: translateX(-50px) scale(0.95); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        /* ซ่อนปุ่มไว้ก่อนเพื่อรอจังหวะโผล่ */
+        #btn-xyz, #btn-tool, #btn-cam, #btn-first, .btn-open-probe {
+            opacity: 0;
+            transform-origin: center;
+        }
+
+        /* หน่วงเวลาให้โผล่เรียงจาก ซ้าย -> กลาง -> ขวา -> กลางล่าง -> ขวาล่าง */
+        #btn-xyz { animation: fadeSlideRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.2s; }
+        #btn-tool { animation: fadeSlideRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.4s; }
+        #btn-cam { animation: fadeSlideRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.6s; }
+        #btn-first { animation: fadeSlideRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.7s; }
+        .btn-open-probe { animation: fadeSlideRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.8s; }
+		
+		/* --- ป้ายชื่อหน้ามุมซ้ายบน --- */
+        .header-title {
+            position: absolute; top: 30px; left: 40px;
+            z-index: 100; transition: 0.3s;
+        }
+        .header-th {
+            font-family: 'Prompt', sans-serif; 
+            font-size: 20px; /* ขนาดไม่ใหญ่มาก พอดีๆ */
+            font-weight: 600; 
+            color: #ffffff;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+            transition: 0.3s;
+        }
+        .header-en {
+            font-family: 'Rajdhani', sans-serif; 
+            font-size: 14px; /* ภาษาอังกฤษตัวเล็กกว่านิดนึง */
+            font-weight: 700; 
+            color: var(--neon-blue);
+            letter-spacing: 2px;
+            margin-top: -2px;
+            transition: 0.3s;
+        }
+        
+        /* เอฟเฟกต์เปลี่ยนเป็นสีทองเมื่อกด Ctrl ค้างไว้ */
+        body.ctrl-active .header-th {
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+        body.ctrl-active .header-en {
+            color: var(--neon-gold);
+        }
+    </style>
+</head>
+<body id="appBody">
+
+<div class="header-title">
+        <div class="header-th">ระบบสอบเทียบกึ่งอัตโนมัติ</div>
+        <div class="header-en">SEMI-AUTOMATIC CALIBRATION</div>
+    </div>
+	
+<audio id="snd-hover" src="uihover.mp3" preload="auto"></audio>
+
+
+    <div class="admin-panel">
+        <button class="edit-mode-btn" onclick="editAllButtonNames()">⚙️ EDIT NAMES</button>
+    </div>
+
+    <div class="main-container">
+        <div class="top-row">
+            <div id="btn-xyz" class="btn-cal btn-main" onclick="handleModeSelection(event, buttonConfig.xyz.videos, 'xyz')">
+                <img src="xyzsensor.png" alt="XYZ Sensor">
+                <div id="text-xyz" class="btn-label">LOADING...</div>
+            </div>
+
+            <div id="btn-tool" class="btn-cal btn-sub" onclick="handleModeSelection(event, buttonConfig.tool.videos, 'tool')">
+                <img src="toolposition.png" alt="Tool Position">
+                <div id="text-tool" class="btn-label">LOADING...</div>
+            </div>
+
+            <div id="btn-cam" class="btn-cal btn-sub" onclick="handleModeSelection(event, buttonConfig.cam.videos, 'cam')">
+                <img src="camerasetup.png" alt="Camera Setup">
+                <div id="text-cam" class="btn-label">LOADING...</div>
+            </div>
+        </div>
+        
+        <div class="bottom-row">
+            <div id="btn-first" class="btn-cal btn-first-setup" onclick="handleFirstSetup(event)">
+                <i class="fa-solid fa-gears setup-icon"></i>
+                <div class="btn-label" style="margin-top:0; line-height: 1.3;">สอบเทียบระบบทั้งหมด<br>ในกรณีที่ติดตั้งเครื่องใหม่</div>
+                <div class="sub-text">(Press 'Ctrl + Click' to execute First Setup)</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+
+    <div class="btn-home-back" onclick="sendAHK('navigate_home')">
+        <i class="fa-solid fa-arrow-left"></i> DASHBOARD
+    </div>
+
+    <div class="btn-open-probe" onclick="openProbeModal()">
+        <i class="fa-solid fa-microscope"></i> ระบบทดสอบตัวเอง
+    </div>
+
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <div class="close-modal" onclick="closeVideo()"><i class="fa-solid fa-xmark"></i></div>
+            <div class="video-box">
+                <video id="v-player" controls></video>
+            </div>
+            <div class="modal-controls">
+                <div id="step-nav-box" class="step-nav">
+                    <button class="btn-step" onclick="prevVideo()">PREV</button>
+                    <span id="step-indicator" style="color:var(--neon-blue); font-family:'Rajdhani';">STEP 1 / 1</span>
+                    <button class="btn-step" onclick="nextVideo()">NEXT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="probeTestModal" class="modal">
+        <div class="probe-modal-content">
+            <div class="close-modal" onclick="closeProbeModal()"><i class="fa-solid fa-xmark"></i></div>
+            
+            <div class="btn-cal probe-btn-main" onclick="handleProbeAction(event, 'probe_results')">
+                <div class="btn-label" style="line-height: 1.2;">
+                    ผลการทดสอบของเครื่อง<br>
+                    <span style="font-size: 0.55em; color: var(--neon-blue);">MACHINE TEST RESULTS</span>
+                </div>
+            </div>
+
+            <div class="probe-bottom-row" style="align-items: flex-start;">
+                <div class="btn-cal probe-btn-sub" onclick="handleProbeAction(event, 'probe_round_1')" style="height: auto; min-height: 140px; padding: 15px; width: 260px;">
+                    <div class="btn-label" style="line-height: 1.2;">
+                        เริ่มการทดสอบ<br>
+                        <span style="font-size: 0.55em; color: var(--neon-blue);">START TEST</span>
+                    </div>
+                    <div style="font-size: 14px; color: #ccc; margin-top: 10px; font-weight: normal; font-family: 'Prompt', sans-serif;">
+                        เริ่มกระบวนการ<br>
+                        <span style="font-size: 12px; color: #888;">(Start Process)</span>
+                    </div>
+                </div>
+                
+                <div class="btn-cal probe-btn-sub" onclick="handleProbeAction(event, 'probe_round_2')" style="height: auto; min-height: 140px; padding: 15px; width: 500px;">
+                    <div class="btn-label" style="line-height: 1.2;">
+                        ทดสอบต่อเนื่อง<br>
+                        <span style="font-size: 0.55em; color: var(--neon-blue);">CONTINUOUS TEST</span>
+                    </div>
+                    <div style="font-size: 16px; color: #ccc; margin-top: 10px; font-weight: normal; font-family: 'Prompt', sans-serif; text-align: center; line-height: 1.5;">
+                        ในขั้นตอนการทดสอบถ้าหัววัดค้าง ให้ยกเลิก(ปุ่มESC)แล้วมากดปุ่มนี้ใหม่<br>ระบบจะทำการวัดใหม่จนครบ 5 รอบ รอจนกว่าผลจะเสร็จ<br>
+                        <span style="font-size: 14px; color: #888;">(In case of error, cancel and press here. System will re-test for 5 rounds. Please wait until finished.)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const hoverSound = document.getElementById('snd-hover');
+        const hoverElements = document.querySelectorAll('.btn-cal, .btn-open-probe, .btn-home-back, .edit-mode-btn');
+        
+        hoverElements.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                if (hoverSound) {
+                    hoverSound.currentTime = 0; 
+                    hoverSound.play().catch(e => console.log("Hover sound error:", e));
+                }
+            });
+        });
+
+        let savedNames = JSON.parse(localStorage.getItem('calibratorNames')) || {};
+
+        function updateButtonDisplay() {
+            for (let key in buttonConfig) {
+                const element = document.getElementById(`text-${key}`);
+                if (element) {
+                    element.innerText = savedNames[key] || buttonConfig[key].defaultText;
+                }
+            }
+        }
+
+        function editAllButtonNames() {
+            let hasChanged = false;
+            for (let key in buttonConfig) {
+                const currentName = savedNames[key] || buttonConfig[key].defaultText;
+                const result = prompt(`แก้ไขชื่อปุ่มโหมด ${key.toUpperCase()}:\n(เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)`, currentName);
+                
+                if (result !== null && result.trim() !== "") {
+                    savedNames[key] = result.trim();
+                    hasChanged = true;
+                }
+            }
+
+            if (hasChanged) {
+                localStorage.setItem('calibratorNames', JSON.stringify(savedNames));
+                updateButtonDisplay();
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', updateButtonDisplay);
+        
+        const appBody = document.getElementById('appBody');
+        let currentPlaylist = [];
+        let currentIndex = 0;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "Control") appBody.classList.add('ctrl-active');
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === "Control") appBody.classList.remove('ctrl-active');
+        });
+
+        function handleModeSelection(event, videos, mode) {
+            if (event.ctrlKey) {
+                let cmd = "";
+                if (mode === 'xyz') cmd = "start_cycle_xyz";
+                else if (mode === 'tool') cmd = "start_cycle_tool";
+                else if (mode === 'cam') cmd = "start_cycle_camera";
+
+                sendAHK(cmd);
+            } 
+            else {
+                openVideoSet(videos);
+            }
+        }
+
+        function handleFirstSetup(event) {
+            if (event.ctrlKey) {
+                sendAHK('first-setup');
+            } else {
+                alert("กรุณากดแป้น 'Ctrl' ค้างไว้ แล้วคลิกเพื่อรันคำสั่งสอบเทียบระบบทั้งหมด (First Setup)");
+            }
+        }
+
+        function openVideoSet(videos) {
+            if(!videos || videos.length === 0) return;
+            currentPlaylist = videos;
+            currentIndex = 0;
+            updatePlayerState();
+            document.getElementById('videoModal').classList.add('active');
+        }
+
+        function updatePlayerState() {
+            const player = document.getElementById('v-player');
+            const navBox = document.getElementById('step-nav-box');
+            const indicator = document.getElementById('step-indicator');
+
+            player.src = currentPlaylist[currentIndex];
+            player.play();
+
+            navBox.style.display = (currentPlaylist.length > 1) ? 'flex' : 'none';
+            indicator.innerText = `STEP ${currentIndex + 1} / ${currentPlaylist.length}`;
+        }
+
+        function nextVideo() {
+            if (currentIndex < currentPlaylist.length - 1) {
+                currentIndex++;
+                updatePlayerState();
+            }
+        }
+
+        function prevVideo() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updatePlayerState();
+            }
+        }
+
+        function closeVideo() {
+            const modal = document.getElementById('videoModal');
+            document.getElementById('v-player').pause();
+            modal.classList.remove('active');
+        }
+
+        function openProbeModal() {
+            document.getElementById('probeTestModal').classList.add('active');
+        }
+
+        function closeProbeModal() {
+            document.getElementById('probeTestModal').classList.remove('active');
+        }
+
+        function handleProbeAction(event, cmd) {
+            if (event.ctrlKey) {
+                sendAHK(cmd);
+            } else {
+                alert("กรุณากดแป้น 'Ctrl' ค้างไว้ แล้วคลิกเพื่อส่งคำสั่งไปยังเครื่อง");
+            }
+        }
+
+        function sendAHK(cmd) {
+            if(window.ahk) {
+                window.ahk.global.CNC_Execute(cmd);
+            } else {
+                console.log("AHK Command Sent:", cmd);
+                alert("Shortcut Active: ส่งคำสั่ง " + cmd);
+            }
+        }
+
+        const greetingFiles = ["1.mp3", "2.mp3"]; 
+
+        function playGreeting() {
+            let index = 0;
+
+            function next() {
+                if (index < greetingFiles.length) {
+                    const audio = new Audio(greetingFiles[index]);
+                    
+                    audio.play().catch(err => {
+                        console.log("รอการคลิกจากผู้ใช้หรือเช็คชื่อไฟล์: " + greetingFiles[index]);
+                    });
+
+                    audio.onended = () => {
+                        index++;
+                        next();
+                    };
+                }
+            }
+            next();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(playGreeting, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสอบเทียบกึ่งอัตโนมัติ - PIYAWAT STANDARD</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-gold: #ffd700;
+            --bg-dark: #050505;
+        }
+
+        body {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            background: var(--bg-dark); color: white;
+            font-family: 'Prompt', sans-serif; overflow: hidden;
+            background-image: radial-gradient(#1a1a1a 1px, transparent 1px); 
+            background-size: 20px 20px;
+            transition: background 0.3s;
+        }
+
+        .header-title {
+            position: absolute; top: 30px; left: 40px;
+            font-family: 'Rajdhani'; font-size: 28px; font-weight: 700;
+            letter-spacing: 2px; color: var(--neon-blue);
+            text-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
+            transition: 0.3s;
+        }
+
+        /* --- เอฟเฟกต์เมื่อกด CTRL ค้างไว้ --- */
+        body.ctrl-active {
+            background-color: #0a0900; /* เปลี่ยนพื้นหลังให้ออกโทนทองมืดๆ */
+        }
+        body.ctrl-active .header-title {
+            color: var(--neon-gold);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+
+        .main-container {
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+            height: 100vh; padding: 100px 50px; box-sizing: border-box; gap: 30px;
+        }
+
+        .top-row { display: flex; width: 100%; height: 55%; gap: 25px; align-items: stretch; }
+
+        /* --- ปุ่มโหมด --- */
+        .btn-cal {
+            background: rgba(255,255,255,0.03); border: 1px solid #333;
+            border-radius: 20px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+
+        /* Hover ปกติ */
+        .btn-cal:hover {
+            border-color: var(--neon-blue); transform: scale(1.02);
+            background: rgba(0, 243, 255, 0.05); box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+        }
+
+        /* เมื่อกด CTRL: ทุกปุ่มจะเปลี่ยนสถานะรอรับคำสั่ง */
+        body.ctrl-active .btn-cal {
+            border-color: var(--neon-gold);
+            background: rgba(255, 215, 0, 0.02);
+        }
+        body.ctrl-active .btn-cal:hover {
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+            transform: scale(1.05);
+        }
+        body.ctrl-active .btn-cal img {
+            filter: drop-shadow(0 0 15px var(--neon-gold)) brightness(1.2);
+        }
+
+        .btn-main { width: 50%; }
+        .btn-sub { width: 25%; }
+
+        .btn-cal img {
+            width: 80%; height: 80%; object-fit: contain;
+            transition: 0.4s; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+
+        .btn-home-back {
+            position: absolute; bottom: 30px; left: 30px;
+            display: flex; align-items: center; gap: 10px;
+            color: #666; font-family: 'Rajdhani'; font-weight: bold; font-size: 20px;
+            cursor: pointer; transition: 0.3s; z-index: 100;
+            padding: 10px 20px; border: 1px solid transparent; border-radius: 10px;
+        }
+
+        /* Modal Settings */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: none; z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            width: 85%; height: 85%; background: #111; border: 2px solid var(--neon-blue);
+            border-radius: 20px; position: relative; display: flex; flex-direction: column;
+        }
+        .video-box { flex: 1; background: #000; border-radius: 18px 18px 0 0; overflow: hidden; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        .modal-controls {
+            height: 80px; display: flex; justify-content: center; align-items: center; 
+            padding: 0 40px; background: rgba(0,0,0,0.5);
+        }
+        .step-nav { display: flex; gap: 15px; align-items: center; }
+        .btn-step {
+            background: #333; color: white; border: 1px solid #555;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: 'Rajdhani';
+        }
+        .close-modal {
+            position: absolute; top: -15px; right: -15px; width: 45px; height: 45px;
+            background: #ff4444; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; cursor: pointer; border: 2px solid white;
+        }
+    </style>
+</head>
+<body id="appBody">
+
+    <div class="header-title">ระบบสอบเทียบกึ่งอัตโนมัติ</div>
+
+    <div class="main-container">
+        <div class="top-row">
+            <div class="btn-cal btn-main" onclick="handleModeSelection(event, ['vdo_cnc/xyz01.mp4', 'vdo_cnc/xyz02.mp4', 'vdo_cnc/xyz03.mp4'], 'xyz')">
+                <img src="xyzsensor.png" alt="XYZ Sensor">
+                <div style="margin-top:10px; font-family:'Rajdhani'; color:#888;">XYZ SENSOR (3 STEPS)</div>
+            </div>
+
+            <div class="btn-cal btn-sub" onclick="handleModeSelection(event, ['vdo_cnc/toolposition.mp4'], 'tool')">
+                <img src="toolposition.png" alt="Tool Position">
+                <div style="margin-top:10px; font-family:'Rajdhani'; color:#888;">TOOL POSITION</div>
+            </div>
+
+            <div class="btn-cal btn-sub" onclick="handleModeSelection(event, ['vdo_cnc/camsetall.mp4'], 'cam')">
+                <img src="camerasetup.png" alt="Camera Setup">
+                <div style="margin-top:10px; font-family:'Rajdhani'; color:#888;">CAMERA SETUP</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-home-back" onclick="sendAHK('navigate_home')">
+        <i class="fa-solid fa-arrow-left"></i> DASHBOARD
+    </div>
+
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <div class="close-modal" onclick="closeVideo()"><i class="fa-solid fa-xmark"></i></div>
+            <div class="video-box">
+                <video id="v-player" controls></video>
+            </div>
+            <div class="modal-controls">
+                <div id="step-nav-box" class="step-nav">
+                    <button class="btn-step" onclick="prevVideo()">PREV</button>
+                    <span id="step-indicator" style="color:var(--neon-blue); font-family:'Rajdhani';">STEP 1 / 1</span>
+                    <button class="btn-step" onclick="nextVideo()">NEXT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const appBody = document.getElementById('appBody');
+        let currentPlaylist = [];
+        let currentIndex = 0;
+
+        // 1. ตรวจจับการกด CTRL เพื่อเปลี่ยนสีทันที (Visual Feedback)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "Control") appBody.classList.add('ctrl-active');
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === "Control") appBody.classList.remove('ctrl-active');
+        });
+
+        // 2. ฟังก์ชันหลักเมื่อมีการคลิกปุ่ม
+        function handleModeSelection(event, videos, mode) {
+            // ถ้ามีการกด CTRL ค้างไว้ขณะคลิก -> ส่งคำสั่ง AHK
+            if (event.ctrlKey) {
+                let cmd = "";
+                if (mode === 'xyz') cmd = "start_cycle_xyz";
+                else if (mode === 'tool') cmd = "start_cycle_tool";
+                else if (mode === 'cam') cmd = "start_cycle_camera";
+
+                if(window.ahk) {
+                    window.ahk.global.CNC_Execute(cmd);
+                } else {
+                    console.log("AHK Command Sent:", cmd);
+                    alert("Shortcut Active: ส่งคำสั่ง " + cmd);
+                }
+            } 
+            // ถ้าคลิกปกติ (ไม่ได้กด CTRL) -> เปิดวิดีโอ
+            else {
+                openVideoSet(videos);
+            }
+        }
+
+        function openVideoSet(videos) {
+            currentPlaylist = videos;
+            currentIndex = 0;
+            updatePlayerState();
+            document.getElementById('videoModal').classList.add('active');
+        }
+
+        function updatePlayerState() {
+            const player = document.getElementById('v-player');
+            const navBox = document.getElementById('step-nav-box');
+            const indicator = document.getElementById('step-indicator');
+
+            player.src = currentPlaylist[currentIndex];
+            player.play();
+
+            navBox.style.display = (currentPlaylist.length > 1) ? 'flex' : 'none';
+            indicator.innerText = `STEP ${currentIndex + 1} / ${currentPlaylist.length}`;
+        }
+
+        function nextVideo() {
+            if (currentIndex < currentPlaylist.length - 1) {
+                currentIndex++;
+                updatePlayerState();
+            }
+        }
+
+        function prevVideo() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updatePlayerState();
+            }
+        }
+
+        function closeVideo() {
+            const modal = document.getElementById('videoModal');
+            document.getElementById('v-player').pause();
+            modal.classList.remove('active');
+        }
+
+        function sendAHK(cmd) {
+            if(window.ahk) window.ahk.global.CNC_Execute(cmd);
+            else console.log("AHK Command:", cmd);
+        }
+    </script>
+</body>
+</html>

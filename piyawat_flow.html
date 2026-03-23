@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIYAWAT FLOW - SYSTEM CONTROL</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ... (ส่วน CSS เดิมทั้งหมด คงไว้ตามเดิม) ... */
+        :root { 
+            --neon-blue: #00f3ff; 
+            --neon-gold: #ffd700; 
+            --glass: rgba(10, 15, 20, 0.95); 
+        }
+
+        body {
+            margin: 0; padding: 0;
+            width: 1280px; height: 900px;
+            background: #000 url('001.png') no-repeat center center;
+            background-size: cover; 
+            color: white; font-family: 'Prompt', sans-serif; 
+            overflow: hidden; user-select: none;
+        }
+
+        /* Connection Layer */
+        #connection-layer { 
+            position: absolute; top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            pointer-events: none; z-index: 1; 
+        }
+        .conn-line {
+            fill: none; stroke: var(--neon-blue); stroke-width: 3px;
+            filter: drop-shadow(0 0 5px var(--neon-blue));
+            stroke-dasharray: 1000; stroke-dashoffset: 1000; 
+            animation: drawLine 0.5s forwards ease-out; opacity: 0.6;
+        }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+        /* Layout Structure */
+        .flow-container { 
+            position: relative; width: 100%; height: 100%; 
+            background: var(--glass); z-index: 2;
+            display: flex; flex-direction: column;
+        }
+
+        .menu-header { 
+            height: 70px; border-bottom: 1px solid #333; 
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .grid-container { 
+            display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr; 
+            height: calc(100% - 70px); width: 100%; 
+        }
+
+        .col { 
+            padding: 20px; display: flex; flex-direction: column; 
+            gap: 20px; position: relative; border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .col-header { 
+            color: var(--neon-blue); font-family: 'Rajdhani'; 
+            font-size: 45px; font-weight: 700; text-align: center; 
+            opacity: 0.8; margin-bottom: 10px;
+        }
+
+        /* Buttons & Interactions */
+        .select-btn { 
+            background: rgba(255,255,255,0.03); border: 1px solid transparent; 
+            border-radius: 15px; padding: 10px; cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            display: flex; align-items: center; justify-content: center; 
+            height: 140px; position: relative; z-index: 10; 
+        }
+        .select-btn img { height: 100px; width: 100%; object-fit: contain; transition: 0.3s; }
+        .select-btn:hover { 
+            background: rgba(10, 20, 30, 0.95); 
+            border-color: var(--neon-blue); 
+            transform: scale(1.1); z-index: 100; 
+        }
+        .select-btn.active { 
+            background: rgba(0,243,255,0.15); 
+            border: 2px solid var(--neon-blue); 
+            box-shadow: 0 0 20px rgba(0,243,255,0.3);
+        }
+
+        /* Execution Panel (Col 04) */
+        .exec-panel { align-items: center; background: rgba(0,0,0,0.3); }
+        #video-container { 
+            width: 100%; height: 350px; display: none; 
+            background: black; border-radius: 15px; overflow: hidden; 
+            margin-top: 20px;
+        }
+        #video-container.show { display: block; border: 1px solid var(--neon-blue); }
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        .btn-start { 
+            width: 100%; padding: 25px; font-size: 32px; font-weight: bold; 
+            font-family: 'Rajdhani'; background: transparent; border: 2px solid #333; 
+            color: #555; border-radius: 12px; cursor: not-allowed; 
+            transition: 0.3s; margin-top: auto; margin-bottom: 20px;
+        }
+        .btn-start.ready { 
+            border-color: var(--neon-blue); color: var(--neon-blue); 
+            cursor: pointer; text-shadow: 0 0 10px var(--neon-blue);
+        }
+        .btn-start.ready:hover { 
+            background: var(--neon-blue); color: black; 
+            box-shadow: 0 0 40px var(--neon-blue); 
+        }
+
+        /* Navigation */
+        .btn-back { 
+            position: absolute; bottom: 30px; left: 30px; 
+            color: #888; cursor: pointer; font-size: 24px; 
+            z-index: 100; transition: 0.3s;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .btn-back:hover { color: white; transform: translateX(-5px); }
+
+        /* Preview Overlay */
+        .global-preview-overlay {
+            position: fixed; top: 70%; left: 80%; transform: translate(-50%, -50%) scale(0.5);
+            z-index: 9999; pointer-events: none; opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .global-preview-overlay.active { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .preview-card {
+            background: rgba(10, 20, 30, 0.95); border: 3px solid var(--neon-blue);
+            border-radius: 20px; padding: 20px; backdrop-filter: blur(10px);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.4);
+        }
+        #global-preview-img { width: 300px; height: auto; }
+    </style>
+</head>
+<body>
+
+<svg id="connection-layer"></svg>
+
+<div class="flow-container">
+    <div class="menu-header">
+        <div style="font-size:26px; font-weight:bold; letter-spacing:5px; font-family:'Rajdhani'">
+            PIYAWAT <span style="color:var(--neon-blue)">FLOW</span>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <div class="col" id="col-1">
+            <div class="col-header">01</div>
+            <div class="select-btn" onclick="selectShape('3p', this, event)"><img src="3pcenter.png"></div>
+            <div class="select-btn" onclick="selectShape('6p', this, event)"><img src="6pcenterht.png"></div>
+            <div class="select-btn" onclick="selectShape('4p', this, event)"><img src="4pconner.png"></div>
+        </div>
+
+        <div class="col" id="col-2">
+            <div class="col-header">02</div>
+            <div id="col2-content"></div>
+        </div>
+
+        <div class="col" id="col-3">
+            <div class="col-header">03</div>
+            <div id="col3-content"></div>
+        </div>
+
+        <div class="col exec-panel" id="col-4">
+            <div class="col-header">04</div>
+            <div id="video-container">
+                <video id="v-player" loop muted autoplay playsinline></video>
+            </div>
+            <button id="btn-start" class="btn-start" onclick="execute(event)">START PROCESS</button>
+        </div>
+    </div>
+
+    <div class="btn-back" onclick="sendAHK('navigate_home')">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>BACK TO DASHBOARD</span>
+    </div>
+</div>
+
+<div id="global-preview" class="global-preview-overlay">
+    <div class="preview-card">
+        <div style="font-family:'Rajdhani'; color:var(--neon-blue); letter-spacing:2px; font-size:12px; margin-bottom:10px;">PREVIEW</div>
+        <img id="global-preview-img" src="" alt="Preview">
+    </div>
+</div>
+
+<script>
+    const shapeData = { 
+        '6p': { out: "6pc.png", in: "in_6pcenter.png" }, 
+        '3p': { out: "3pcircle.png", in: "in_3pcircle.png" }, 
+        '4p': { out: "4pcon.png", in: "in_4pconner.png" } 
+    };
+
+    let state = { 
+        shape: null, side: null, device: null, 
+        elShape: null, elSide: null, elDev: null, elStart: null 
+    };
+
+    // --- Core Logic ---
+
+    // เพิ่ม event เข้าไปในพารามิเตอร์
+    function selectShape(id, el, event) { 
+        highlight(el); 
+        state.shape = id; 
+        state.elShape = el; 
+        state.side = null; 
+        state.device = null; 
+        
+        // แก้ไข onclick ของปุ่มใน Col 2 ให้ส่ง event
+        document.getElementById('col2-content').innerHTML = `
+            <div class="select-btn" onclick="selectSide('out', this, event)"><img src="${shapeData[id].out}"></div>
+            <div class="select-btn" onclick="selectSide('in', this, event)"><img src="${shapeData[id].in}"></div>
+        `;
+        document.getElementById('col3-content').innerHTML = ''; 
+        resetVideo(); 
+        setTimeout(drawLines, 50); 
+    }
+
+    // เพิ่ม event เข้าไปในพารามิเตอร์
+    function selectSide(id, el, event) { 
+        highlight(el); 
+        state.side = id; 
+        state.elSide = el; 
+        state.device = null; 
+        
+        // แก้ไข onclick ของปุ่มใน Col 3 ให้ส่ง event
+        document.getElementById('col3-content').innerHTML = `
+            <div class="select-btn" onclick="selectDevice('joy', this, event)"><img src="joyv3.png"></div>
+            <div class="select-btn" onclick="selectDevice('cam', this, event)"><img src="camerav3.png"></div>
+        `;
+        resetVideo(); 
+        setTimeout(drawLines, 50); 
+    }
+
+    // เพิ่ม event เข้าไปในพารามิเตอร์
+    function selectDevice(id, el, event) { 
+        highlight(el); 
+        state.device = id; 
+        state.elDev = el; 
+        
+        // Deterministic video mapping
+        const videoFile = (id === 'joy') ? "6pjoy.mp4" : "out_6pcam.mp4";
+        playVideo(videoFile); 
+        setTimeout(drawLines, 50); 
+    }
+
+    function highlight(el) { 
+        Array.from(el.parentElement.children).forEach(s => s.classList.remove('active')); 
+        el.classList.add('active'); 
+    }
+
+    function playVideo(src) { 
+        const v = document.getElementById('v-player'); 
+        const c = document.getElementById('video-container'); 
+        const b = document.getElementById('btn-start'); 
+        v.src = src; 
+        c.classList.add('show'); 
+        b.classList.add('ready'); 
+        state.elStart = b; 
+    }
+
+    function resetVideo() { 
+        document.getElementById('video-container').classList.remove('show'); 
+        document.getElementById('btn-start').classList.remove('ready'); 
+        state.elStart = null; 
+    }
+
+    // --- SVG Connection Logic ---
+
+    function drawLines() { 
+        const svg = document.getElementById('connection-layer'); 
+        svg.innerHTML = ''; 
+        if (state.elShape && state.elSide) connect(state.elShape, state.elSide, svg); 
+        if (state.elSide && state.elDev) connect(state.elSide, state.elDev, svg); 
+        if (state.elDev && state.elStart) connect(state.elDev, state.elStart, svg); 
+    }
+
+    function connect(el1, el2, svg) { 
+        const r1 = el1.getBoundingClientRect(); 
+        const r2 = el2.getBoundingClientRect(); 
+        const x1 = r1.right; 
+        const y1 = r1.top + r1.height / 2; 
+        const x2 = r2.left; 
+        const y2 = r2.top + r2.height / 2; 
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); 
+        path.setAttribute('d', `M ${x1} ${y1} C ${x1+(x2-x1)/2} ${y1}, ${x1+(x2-x1)/2} ${y2}, ${x2} ${y2}`); 
+        path.setAttribute('class', 'conn-line'); 
+        svg.appendChild(path); 
+    }
+
+    // --- Execution (จุดที่แก้ไขหลัก) ---
+
+    // เพิ่มฟังก์ชันกลางสำหรับส่งคำสั่งไปยัง AHK (เหมือนใน setup_mode_name.html)
+    function sendAHK(cmd) {
+        if(window.ahk) {
+            // เรียกใช้ผ่าน window.ahk.global.CNC_Execute ตามรูปแบบของ WebViewToo
+            window.ahk.global.CNC_Execute(cmd);
+        } else {
+            console.log("AHK Command (Simulation):", cmd);
+            // alert("Shortcut Active: ส่งคำสั่ง " + cmd); // เปิดไว้เพื่อทดสอบได้
+        }
+    }
+
+    function execute(event) { 
+        if (!state.device) return; 
+        
+        // การตรวจสอบการกดปุ่ม Ctrl ค้างไว้
+        if (!event.ctrlKey) {
+            alert("⚠️ กรุณากดปุ่ม CTRL ค้างไว้พร้อมกับคลิกเพื่อยืนยันการเริ่มทำงาน");
+            return; 
+        }
+
+        // สร้างชื่อคำสั่ง เช่น run_6p_out_joy
+        const cmd = `run_${state.shape}_${state.side}_${state.device}`;
+        
+        console.log("Engineering Log: Executing Command ->", cmd);
+
+        // ส่งคำสั่งไปยัง AHK ผ่านฟังก์ชัน sendAHK
+        sendAHK(cmd);
+    }
+
+    // --- UI Helpers ---
+
+    window.addEventListener('resize', drawLines);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const preview = document.getElementById('global-preview');
+        const previewImg = document.getElementById('global-preview-img');
+
+        document.addEventListener('mouseover', (e) => {
+            const btn = e.target.closest('.select-btn');
+            if (btn) {
+                const img = btn.querySelector('img');
+                if (img) {
+                    previewImg.src = img.src;
+                    preview.classList.add('active');
+                }
+            }
+        });
+
+        document.addEventListener('mouseout', (e) => {
+            if (e.target.closest('.select-btn')) preview.classList.remove('active');
+        });
+    });
+</script>
+
+</body>
+</html>
