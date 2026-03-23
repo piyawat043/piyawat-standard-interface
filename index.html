@@ -242,7 +242,7 @@ const sounds = {
     setup: document.getElementById('snd-setup'),
     standby: document.getElementById('snd-standby'),
     toolset: document.getElementById('snd-toolset'),
-    cameracut: document.getElementById('snd-cameracut') // เพิ่มบรรทัดนี้
+    cameracut: document.getElementById('snd-cameracut')
 };
 
 setupHoverEffect('billboard', 'vid-start', 'standby');
@@ -262,11 +262,6 @@ otherButtons.forEach(id => {
 
 const cameraBtn = document.getElementById('camera-cut-btn');
 if(cameraBtn) {
-    cameraBtn.addEventListener('mouseenter', () => {
-        sounds.cameracut.currentTime = 0;
-        sounds.cameracut.play();
-    });
-    // ถ้าต้องการให้หยุดเล่นทันทีที่เอาเมาส์ออก ให้เพิ่มส่วนนี้:
     cameraBtn.addEventListener('mouseleave', () => {
         sounds.cameracut.pause();
         sounds.cameracut.currentTime = 0;
